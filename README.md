@@ -1,69 +1,82 @@
-# Hpof - 24×15=360 Massless Clock → Gas Giant
+# Hpof FULL - 24×15=360 → Gas Giant → Water Lattice
 
-Your math only. No other stack. Whole numbers you can't break.
+Whole numbers only. Your math. No other stack.
 
-![Clock](clock.png)
+## Big Picture
 
-## The idea
-
-* **Clock = Fin 24** - 24 marks, 15° each, 360° total
-* **+3 step** - 8 steps closes: `iter 8 k = k` (`by decide`)
+* **24×15=360** - massless clock, 24 marks, 15° each
+* **+3 step, 8 steps closes** - `iter 8 k = k` - finite & closed
 * **3 chains cover all 24** - 0 mod 3, 1 mod 3, 2 mod 3
-* **Sphere = finite & closed** - 24 points at fixed radius `r`
-* **Nesting = goes to infinity** - `R` spheres stacked, not one sphere stretching
-* **Fibers = Air or Nitrogen** - mass gives energy, no mass = empty track
+* **Nesting goes to infinity** - R shells stacked, not one sphere stretching
+* **No mass = empty track, Mass = fiber has energy** - `Energy = m * r * r`
+* **Fibers = Air or Nitrogen** - Air mass=1, Nitrogen mass=2 → gas giant
+* **Lattice only exposed when frozen** - liquid hides it, ice shows it
 
-```
-Hpof = clock + mass + nesting
-```
-
-## Gas giant version
-
-Before: fiber was just a track.
-Now: fiber has material.
+## Gas Giant
 
 ```lean
 def AirShell (r : Nat) : Shell := { r := r, mass := 1 }
 def NitrogenShell (r : Nat) : Shell := { r := r, mass := 2 }
-
 def Energy (s : Shell) : Nat := s.mass * s.r * s.r
-
-theorem air_has_energy (r) (hr : 0 < r) : 0 < Energy (AirShell r)
-theorem nitrogen_has_energy (r) (hr : 0 < r) : 0 < Energy (NitrogenShell r)
 ```
 
-Air = mass 1, Nitrogen = mass 2, both give `m * r² > 0`. Layer them → gas giant.
+Nest Air + Nitrogen shells = gas giant layers.
 
-## What Lean checks (all green, bare Lean 4, no Mathlib)
+## Water Lattice - the new piece
 
-* `deg_lt_360` - every mark <360
-* `iter8_closes` - 8 steps +3 mod 24 = home
-* `three_chains_cover`
-* `energy_zero_iff_mass_zero : Energy = 0 ↔ mass = 0` when `r>0` - proven with `Nat.mul_eq_zero.mp`, not by definition
-* `mass_pos_gives_energy : mass>0 → Energy>0` - `Nat.mul_pos`
-* `fiber_in_shell`, `fibers_disjoint : r1≠r2 → Fiber r1 ∩ Fiber r2 = ∅` - spherical certainty
-* `sphere_finite : (Sphere s).length = 24` - `by rfl` (fixed from `by decide` +revert error)
-* `hpof_always_closed`
+Your line: "The lattice is only exposed when water is frozen"
 
-## Build
+```lean
+inductive WaterState where
+  | liquid
+  | frozen
+
+def latticeExposed (d : Drop) : Bool :=
+  (match d.state with
+  | WaterState.liquid => false
+  | WaterState.frozen => true)
+
+theorem lattice_exposed_iff_frozen (d : Drop) :
+  latticeExposed d = true ↔ d.state = WaterState.frozen
+```
+
+* Liquid drop: `IceLattice = []` - disordered, free-moving, >0°C
+* Frozen drop: 6-point hex lattice `60° × 6 = 360°` - ordered, ≤0°C
+* 24/6 = 4 → hex lattice fits inside 24 clock
+
+Goes with drops work: drop is sphere, lattice shows only when frozen.
+
+## Files in this zip
+
+* `Hpof.lean` - V3 GREEN FINAL - gas giant, 24×15=360, all green bare Lean 4
+* `WaterLattice.lean` - lattice only when frozen, with your exact match syntax
+* `clock.png` - 24×15 massless clock, 3 chains
+* `lattice_liquid_vs_frozen.png` - visual: liquid no lattice, frozen hex lattice exposed
+* `lattice_diagram.png` - second visual
+* `README.md` - this file
+
+## Lean - how to check green
 
 ```bash
-lake build
--- or just
 lean Hpof.lean
+lean WaterLattice.lean
+# or
+lake build
 ```
 
-No `omega`, no `Mathlib`, no `sorry`. Just `decide`, `rfl`, `simp`.
-
-## Files
-
-* `Hpof.lean` - V3 GREEN FINAL - the locked file that compiles
-* `clock.png` - 24×15=360 massless clock, 3 chains, Hpof = clock + mass + nesting
+No omega, no Mathlib, no sorry. Fixed errors:
+* `Expected type must not contain free variables` → `sphere_finite by rfl` not `by decide`
+* `0 < {r:=r, mass:=1}.mass` → `Nat.mul_pos hr hr`
 
 ## History
 
-V1: massless clock, 24×15=360, almost all green
-V2: locked with `Energy = m * r²`, no Bool trick
-V3: fixed `Expected type must not contain free variables` → `sphere_finite by rfl`, `air_has_energy by Nat.mul_pos`, added Air/Nitrogen → gas giant
+V1: massless clock 24×15=360
+V2: added mass, locked Energy = m*r²
+V3: fixed green, added Air/Nitrogen → gas giant
+V4 (this): added WaterLattice → lattice only exposed when frozen, goes with drops
+
+`Hpof = clock + mass + nesting`
+`Drop = sphere + state`
+`Lattice = hidden in liquid, exposed in ice`
 
 Bingo.
