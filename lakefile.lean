@@ -1,8 +1,8 @@
 import Lake
 open Lake DSL
 
-package hpof_snapshot where
-  version := v!"9.0.0"
+package hpof_spatial where
+  version := v!"10.0.0-draft"
 
 @[default_target]
 lean_lib Hpof where
