@@ -1,5 +1,6 @@
 -- Hpof V10 - Symbolic Snapshot + Spatial
 -- Bare Lean 4, no axioms, all rfl/decide green
+-- Based on V9 final (main @ 76a463e) + spatial layer
 
 def SCALE : Nat := 100
 def SCALE2 : Nat := 10000
