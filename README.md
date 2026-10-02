@@ -1,6 +1,8 @@
 # Hpof V5.2 — Snapshot Model + Physical Proof
 **No runs, drips, or errors. This happens for real.**
 
+![Hpof V5 - Container / Half Frozen / Free Fall](HpofV5_infographic.webp)
+
 Hpof V5 moves from generic gas to physical water: fresh vs salt with different freezing points, brine channels as fibers, and gravity power in free fall. V5.2 adds the physical analog that proves the Lean — Bay of Fundy half-frozen zone.
 
 ## Core Idea
