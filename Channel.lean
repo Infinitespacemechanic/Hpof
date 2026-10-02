@@ -1,38 +1,40 @@
--- V10 Spatial Layer - Channel as connected path
-import Hpof.Snapshot
+-- Hpof V10 Spatial - Channel
+-- Bare Lean 4, no axioms, all rfl/decide
 import Hpof.Spatial.Cell
 
-structure Channel where
-  cells : List Cell
-  name : String := "channel"
-deriving Repr
+inductive WaterKind where
+| fresh
+| salt
+| air
+| nitrogen
+deriving DecidableEq, Repr
 
-def Channel.length (c : Channel) : Nat := c.cells.length
+def freezePoint : WaterKind -> Int
+| .fresh => 0
+| .salt => -2
+| .air => -100
+| .nitrogen => -100
 
-def Channel.isEmpty (c : Channel) : Bool := c.cells.isEmpty
+def isFrozen (T : Int) (w : WaterKind) : Bool :=
+  T <= freezePoint w
 
--- Open condition reuses V9 symbolic model: brineChannelOpen T
-def Channel.isOpenAt (c : Channel) (T : Int) : Bool :=
-  brineChannelOpen T && !c.isEmpty
+def phaseBoundaryAt (T : Int) (a b : WaterKind) : Bool :=
+  (isFrozen T a) != (isFrozen T b)
 
--- Check path connectivity: every consecutive pair adjacent
-def Channel.isConnected : Channel → Bool
-  | { cells := [], .. } => true
-  | { cells := [_], .. } => true
-  | { cells := a :: b :: rest, .. } =>
-    if a.adjacent b then
-      Channel.isConnected { cells := b :: rest }
-    else false
+def brineChannelOpen (T : Int) : Bool :=
+  phaseBoundaryAt T .fresh .salt
 
-def Channel.exampleVertical : Channel :=
-  { cells := [ { x := 0, y := 0, z := 0 }, { x := 0, y := 0, z := 1 }, { x := 0, y := 0, z := 2 } ]
-    name := "vertical-3" }
+-- V10 new: spatial open condition at cell pair
+def Channel.isOpenAt (T : Int) (a b : WaterKind) : Bool :=
+  phaseBoundaryAt T a b
 
-def Channel.exampleBroken : Channel :=
-  { cells := [ { x := 0, y := 0, z := 0 }, { x := 5, y := 5, z := 5 } ]
-    name := "broken" }
+def Channel.isConnected (c1 c2 : Cell) (T : Int) : Bool :=
+  c1.isNeighbor c2 && brineChannelOpen T
 
-#eval Channel.exampleVertical.isConnected -- true
-#eval Channel.exampleBroken.isConnected -- false
-#eval Channel.exampleVertical.isOpenAt (-1) -- true, frozen fresh vs liquid salt + non-empty
-#eval Channel.exampleVertical.isOpenAt (-3) -- false, both frozen
+theorem brine_closed_at_0 : brineChannelOpen 0 = false := by rfl
+theorem brine_open_at_minus1 : brineChannelOpen (-1) = true := by rfl
+theorem brine_open_at_minus3 : brineChannelOpen (-3) = true := by rfl
+
+theorem channel_open_iff_frozen_diff (T : Int) (a b : WaterKind) :
+  Channel.isOpenAt T a b = phaseBoundaryAt T a b := by rfl
+

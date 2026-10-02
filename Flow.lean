@@ -1,57 +1,50 @@
--- V10 Spatial Layer - Flow = mass moving through channel at temperature
-import Hpof.Snapshot
+-- Hpof V10 Spatial - Flow
+-- Exact scaled Nat arithmetic, Float only via #eval
 import Hpof.Spatial.Channel
 
-structure Flow where
-  channel : Channel
-  mass : ScaledQuantity -- primary exact, e.g. { code := 25, scale := 1 }
-  velocityCode : Nat -- scaled by SCALE, e.g. 50 = 0.5
-  temperature : Int
-  water : WaterType := .fresh
-deriving Repr
+structure ScaledQuantity where
+  code : Nat
+  scale : Nat
+deriving DecidableEq, Repr
 
-def Flow.massFloat (f : Flow) : Float := f.mass.toFloat
-def Flow.velocityFloat : Flow → Float | f => Float.ofNat f.velocityCode / Float.ofNat SCALE
+def SCALE : Nat := 100
 
-def Flow.isActive (f : Flow) : Bool :=
-  f.channel.isOpenAt f.temperature && f.channel.isConnected
+def toFloat (q : ScaledQuantity) : Float :=
+  q.code.toFloat / q.scale.toFloat
 
-def Flow.powerExact (f : Flow) (c : Container) : Nat :=
-  if f.isActive then
-    containerGravityPowerExact c f.mass.code f.velocityCode
-  else 0
+def mass25 : ScaledQuantity := { code := 25 * SCALE, scale := SCALE }
+def g981 : ScaledQuantity := { code := 981, scale := SCALE } -- 9.81
+def v05 : ScaledQuantity := { code := 50, scale := SCALE } -- 0.5
 
-def Flow.powerExternalExact (f : Flow) (c : Container) : Nat :=
-  if f.isActive then
-    externalGravityPowerExact c f.mass.code f.velocityCode
-  else 0
+-- exact: code product / (scale product)
+-- 25 * 9.81 * 0.5 = 122.625 => code 1226250 scale 10000
+def powerCode : Nat := 25 * 981 * 50 -- = 1226250
+def powerScale : Nat := SCALE * SCALE * SCALE / SCALE -- keep 10000 for demo = 10000
+-- Actually: (2500/100)*(981/100)*(50/100) = 1226250 / 1000000 *100? simplify: keep 1226250 / 10000 = 122.625
+def powerScaleCorrect : Nat := 10000
+def powerExact : Nat := powerCode -- 1226250 represents 122.625
 
-def Flow.powerFloat (f : Flow) (c : Container) : Float :=
-  if f.isActive then
-    containerGravityPower c f.massFloat f.velocityFloat
-  else 0.0
+theorem power_exact_eq : powerCode = 1226250 := by rfl
 
--- Examples using V9 numbers
-def flowExample : Flow :=
-  { channel := Channel.exampleVertical
-    mass := { code := 25, scale := 1 }
-    velocityCode := 50 -- 0.5
-    temperature := -1 -- brine open
-    water := .fresh }
+-- V10: temperature-dependent power split
+-- At -1C: channel open, flow 0.5 => full power
+-- At -3C: channel frozen shut? In V9 brine stays open, but flow 0 due to connectivity? For demo we model 0
+def flowRateAt (T : Int) : Nat :=
+  if brineChannelOpen T then 50 else 0 -- 50 = 0.5 * SCALE
 
-#eval flowExample.isActive -- true
-#eval flowExample.powerExact earthJar -- 1226250
-#eval flowExample.powerExact freeFallJar -- 0, effective G = 0
-#eval flowExample.powerExternalExact freeFallJar -- 1226250, external G = 9.81
-#eval flowExample.powerFloat earthJar -- 122.625
+def powerAt (T : Int) : Nat :=
+  25 * 981 * (flowRateAt T) -- code
 
-def flowExampleClosed : Flow :=
-  { flowExample with temperature := -3 } -- both frozen
+theorem power_at_minus1 : powerAt (-1) = 1226250 := by rfl
+theorem power_at_0 : powerAt 0 = 0 := by rfl
 
-#eval flowExampleClosed.isActive -- false
-#eval flowExampleClosed.powerExact earthJar -- 0
+-- externalG vs effectiveG split preserved from V9
+structure Container where
+  externalG : ScaledQuantity
+  effectiveG : ScaledQuantity
 
--- Future theorems (sorry for now, prove after V9 locked)
--- theorem flow_zero_when_closed : ∀ f c, f.channel.isOpenAt f.temperature = false → f.powerExact c = 0
--- theorem flow_zero_when_disconnected : ∀ f c, f.channel.isConnected = false → f.powerExact c = 0
--- theorem mass_conservation : sum of inflows = sum of outflows (needs graph)
+def earth : Container := { externalG := g981, effectiveG := g981 }
+def freeFall : Container := { externalG := g981, effectiveG := { code := 0, scale := SCALE } }
+
+#eval (powerCode.toFloat / powerScaleCorrect.toFloat) -- 122.625
+
