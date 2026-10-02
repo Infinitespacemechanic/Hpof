@@ -1,0 +1,6 @@
+Hpof V5 Full Pack
+- HpofV5.lean : V5 base - no runs drips or errors
+- HpofV5_2.lean : V5.2 with half-frozen zone + rotationFromFriction + Bay of Fundy Old Sow proof
+- README.md : V5.2 physical analog - fresh ice + salty sea
+- infographic/HpofV5_infographic.webp : Container / Freezing / Free Fall
+GitHub: git add -A && git commit -m "V5.2 Fundy half-frozen proof" && git push
